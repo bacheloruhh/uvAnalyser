@@ -68,7 +68,16 @@ def read_data():
 
 def normalize_data(data):
     # Takes a 2d list, normalizes the values and returns it.
-    print "oh shit"
+    print "Normalizing data..."
+    dif = default_hig_wvl - default_low_wvl + 1
+    for col in range(1, len(data[0])):
+        avg = 0
+        for x in range(avg_cnt):
+            avg += float(data[dif-x][col])
+        avg /= avg_cnt
+        for row in range(1, dif+1):
+            data[row][col] = str(float(data[row][col])-avg)
+    return data
 
 
 def write_data(data, delim):
@@ -80,18 +89,35 @@ def write_data(data, delim):
 
 
 def exciton_finder(data):
-    # Takes a 2d list and writes a file with a guess for the first exciton.
+    # Takes a 2d list and writes a file with estimates for the first excitons.
     if default_exc_fin:
-        exc_found = 0
-        print "%d of %d excitons found." % (exc_found, len(data[0]))
+        with open("first_exciton.txt", 'w') as writer:
+            writer.write("sample\tfirst exciton [nm]")
+            exc_found = 0
+
+            for col in range(1, len(data[0])):
+                prev = 0
+                for row in range(len(data)-1, 0, -1):
+                    if float(data[row][col]) > exc_thr:
+                        if float(data[row][col]) < prev:
+                            writer.write("\n%s\t%d" % (data[0][col],
+                                                       row+default_low_wvl)
+                                         )
+                            exc_found += 1
+                            break
+                        prev = float(data[row][col])
+
+        if exc_found == 0:
+            os.remove("first_exciton.txt")
+
+        print "%d of %d excitons found." % (exc_found, len(data[0])-1)
     else:
         print "Exciton finder disabled."
 
 
 avg_cnt, exc_thr = welcome()
 data = read_data()
-
+data = normalize_data(data)
 write_data(data, default_delimit)
 exciton_finder(data)
-print
 raw_input("Press 'Enter' to close window...")
